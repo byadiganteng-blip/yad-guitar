@@ -158,6 +158,11 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // === TRACKING: onCreate ===
+        Logger.sysEvent("onCreate", "MainActivity start")
+        Logger.sysEvent("Device", "${Build.MANUFACTURER} ${Build.MODEL}")
+        Logger.sysEvent("Android", "${Build.VERSION.RELEASE} SDK ${Build.VERSION.SDK_INT}")
+
         guitarView = findViewById(R.id.guitarView)
         tvChordInfo = findViewById(R.id.tvChordInfo)
         btnAutoStrum = findViewById(R.id.btnAutoStrum)
@@ -168,9 +173,30 @@ class MainActivity : AppCompatActivity() {
 
         guitarView.onStringPlucked = { idx -> playString(idx) }
 
-        findViewById<Button>(R.id.btnStrumDown).setOnClickListener { strumDown() }
-        findViewById<Button>(R.id.btnStrumUp).setOnClickListener { strumUp() }
-        btnAutoStrum.setOnClickListener { toggleAutoStrum() }
+        findViewById<Button>(R.id.btnStrumDown).setOnClickListener {
+            Logger.buttonPress("MainActivity", "btnStrumDown")
+            try {
+                strumDown()
+            } catch (e: Exception) {
+                Logger.trackError("MainActivity", "btnStrumDown", e)
+            }
+        }
+        findViewById<Button>(R.id.btnStrumUp).setOnClickListener {
+            Logger.buttonPress("MainActivity", "btnStrumUp")
+            try {
+                strumUp()
+            } catch (e: Exception) {
+                Logger.trackError("MainActivity", "btnStrumUp", e)
+            }
+        }
+        btnAutoStrum.setOnClickListener {
+            Logger.buttonPress("MainActivity", "btnAutoStrum")
+            try {
+                toggleAutoStrum()
+            } catch (e: Exception) {
+                Logger.trackError("MainActivity", "btnAutoStrum", e)
+            }
+        }
 
         // Tap chord info untuk ganti pattern
         tvChordInfo.setOnClickListener {
@@ -200,7 +226,16 @@ class MainActivity : AppCompatActivity() {
         }
 
         findViewById<Button>(R.id.btnRecord).setOnClickListener {
-            startRecording()
+            Logger.buttonPress("MainActivity", "btnRecord")
+            Logger.methodEntry("MainActivity", "startRecording")
+            try {
+                startRecording()
+            } catch (e: Exception) {
+                Logger.trackError("MainActivity", "btnRecord", e)
+                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+            } finally {
+                Logger.methodExit("MainActivity", "startRecording")
+            }
         }
 
         findViewById<Button>(R.id.btnStop).setOnClickListener {
@@ -224,6 +259,7 @@ class MainActivity : AppCompatActivity() {
     //  RECORDING METHODS
     // ============================================================
     private fun startRecording() {
+        Logger.recEvent("startRecording", "begin")
         try {
             if (isRecording) {
                 Toast.makeText(this, "Sudah merekam", Toast.LENGTH_SHORT).show()
@@ -246,6 +282,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun stopRecording() {
+        Logger.recEvent("stopRecording", "begin")
         try {
             if (!isRecording) {
                 Toast.makeText(this, "Belum merekam", Toast.LENGTH_SHORT).show()
@@ -270,6 +307,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun playRecording() {
+        Logger.recEvent("playRecording", "begin")
         try {
             if (isPlayingRecording) {
                 AudioRecorderHelper.stopPlayback()
@@ -298,6 +336,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun saveRecording() {
+        Logger.recEvent("saveRecording", "begin")
         try {
             val file = lastRecording ?: AudioRecorderHelper.getLatestRecording(this)
             if (file == null) {
@@ -319,6 +358,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun tuneRecording() {
+        Logger.recEvent("tuneRecording", "begin")
         try {
             val file = lastRecording ?: AudioRecorderHelper.getLatestRecording(this)
             if (file == null) {
@@ -403,8 +443,15 @@ class MainActivity : AppCompatActivity() {
     // PLAY STRING dengan dinamika
     // ============================================================
     private fun playString(index: Int, volume: Float = 1.0f) {
-        if (index < 0 || index >= 6) return
-        if (!soundLoaded) return
+        Logger.audioEvent("playString", "index=$index volume=$volume")
+        if (index < 0 || index >= 6) {
+            Logger.w("MainActivity", "playString: invalid index $index")
+            return
+        }
+        if (!soundLoaded) {
+            Logger.w("MainActivity", "playString: sound not loaded")
+            return
+        }
 
         // Skip senar kalau tidak ada di chord (kalau chord aktif)
         currentChord?.let { chord ->
@@ -436,6 +483,7 @@ class MainActivity : AppCompatActivity() {
     // MANUAL STRUM
     // ============================================================
     private fun strumDown() {
+        Logger.audioEvent("strumDown", "start")
         // Strum dari bass ke treble
         val strumDurationMs = 60L  // total durasi strum
         val stepDelay = strumDurationMs / 6
@@ -450,6 +498,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun strumUp() {
+        Logger.audioEvent("strumUp", "start")
         // Strum dari treble ke bass
         val strumDurationMs = 60L
         val stepDelay = strumDurationMs / 6
@@ -467,7 +516,9 @@ class MainActivity : AppCompatActivity() {
     // AUTO STRUM dengan pattern profesional
     // ============================================================
     private fun toggleAutoStrum() {
+        Logger.audioEvent("toggleAutoStrum", "current=$isAutoStrumming")
         isAutoStrumming = !isAutoStrumming
+        Logger.audioEvent("toggleAutoStrum", "new=$isAutoStrumming")
         if (isAutoStrumming) {
             btnAutoStrum.text = "⏹️ STOP"
             btnAutoStrum.backgroundTintList =
@@ -542,14 +593,26 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun selectChord(chord: Chord) {
+        Logger.uiEvent("MainActivity", "selectChord", chord.name)
         currentChord = chord
         tvChordInfo.text = chord.name
         guitarView.setChord(chord)
         Toast.makeText(this, "Chord: ${chord.name}", Toast.LENGTH_SHORT).show()
     }
 
+    override fun onPause() {
+        super.onPause()
+        Logger.sysEvent("onPause", "App pause")
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Logger.sysEvent("onResume", "App resume")
+    }
+
     override fun onDestroy() {
         super.onDestroy()
+        Logger.sysEvent("onDestroy", "MainActivity end")
         handler.removeCallbacksAndMessages(null)
         soundPool.release()
     }
