@@ -8,6 +8,13 @@ import android.os.Handler
 import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.Manifest
+import android.content.pm.PackageManager
+import android.widget.Button
+import android.widget.TextView
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import java.io.File
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -15,6 +22,18 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
+
+    companion object {
+        private const val REQ_RECORD_AUDIO = 1001
+    }
+
+    // Recording state
+    private var isRecording = false
+    private var lastRecording: File? = null
+    private var isPlayingRecording = false
+    private var tvRecStatus: TextView? = null
+    private var btnRecord: Button? = null
+    private var btnAutoTune: Button? = null
 
     private lateinit var guitarView: GuitarView
     private lateinit var tvChordInfo: TextView
@@ -161,6 +180,198 @@ class MainActivity : AppCompatActivity() {
                 "Pattern: ${patterns[currentPattern].name}",
                 Toast.LENGTH_SHORT
             ).show()
+        }
+
+        // ============================================================
+        //  RECORDING CONTROLS
+        // ============================================================
+        tvRecStatus = findViewById(R.id.tvRecStatus)
+        btnRecord = findViewById(R.id.btnRecord)
+        btnAutoTune = findViewById(R.id.btnAutoTune)
+
+        // Request RECORD_AUDIO permission
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+            != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.RECORD_AUDIO),
+                REQ_RECORD_AUDIO
+            )
+        }
+
+        findViewById<Button>(R.id.btnRecord).setOnClickListener {
+            startRecording()
+        }
+
+        findViewById<Button>(R.id.btnStop).setOnClickListener {
+            stopRecording()
+        }
+
+        findViewById<Button>(R.id.btnPlayRec).setOnClickListener {
+            playRecording()
+        }
+
+        findViewById<Button>(R.id.btnSave).setOnClickListener {
+            saveRecording()
+        }
+
+        findViewById<Button>(R.id.btnAutoTune).setOnClickListener {
+            tuneRecording()
+        }
+    }
+
+    // ============================================================
+    //  RECORDING METHODS
+    // ============================================================
+    private fun startRecording() {
+        try {
+            if (isRecording) {
+                Toast.makeText(this, "Sudah merekam", Toast.LENGTH_SHORT).show()
+                return
+            }
+            val file = AudioRecorderHelper.startRecording(this)
+            if (file != null) {
+                isRecording = true
+                tvRecStatus?.text = "🔴 Merekam..."
+                Logger.i("MainActivity", "Recording started: ${file.name}")
+                Toast.makeText(this, "Merekam...", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Gagal mulai rekam", Toast.LENGTH_SHORT).show()
+                Logger.e("MainActivity", "startRecording failed", null)
+            }
+        } catch (e: Exception) {
+            Logger.e("MainActivity", "startRecording exception", e)
+            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun stopRecording() {
+        try {
+            if (!isRecording) {
+                Toast.makeText(this, "Belum merekam", Toast.LENGTH_SHORT).show()
+                return
+            }
+            val file = AudioRecorderHelper.stopRecording()
+            isRecording = false
+            if (file != null && file.exists()) {
+                lastRecording = file
+                val sizeKb = file.length() / 1024
+                tvRecStatus?.text = "✅ Selesai: ${file.name} (${sizeKb} KB)"
+                Logger.i("MainActivity", "Recording stopped: ${file.name}")
+                Toast.makeText(this, "Rekaman tersimpan", Toast.LENGTH_SHORT).show()
+            } else {
+                tvRecStatus?.text = "❌ Gagal rekam"
+                Toast.makeText(this, "Gagal simpan rekaman", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            Logger.e("MainActivity", "stopRecording exception", e)
+            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun playRecording() {
+        try {
+            if (isPlayingRecording) {
+                AudioRecorderHelper.stopPlayback()
+                isPlayingRecording = false
+                tvRecStatus?.text = "⏹️ Playback berhenti"
+                return
+            }
+            val file = lastRecording ?: AudioRecorderHelper.getLatestRecording(this)
+            if (file == null) {
+                Toast.makeText(this, "Belum ada rekaman", Toast.LENGTH_SHORT).show()
+                return
+            }
+            isPlayingRecording = true
+            tvRecStatus?.text = "▶️ Memutar: ${file.name}"
+            Logger.i("MainActivity", "Playing: ${file.name}")
+            AudioRecorderHelper.play(file) {
+                runOnUiThread {
+                    isPlayingRecording = false
+                    tvRecStatus?.text = "✅ Playback selesai"
+                }
+            }
+        } catch (e: Exception) {
+            Logger.e("MainActivity", "playRecording exception", e)
+            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun saveRecording() {
+        try {
+            val file = lastRecording ?: AudioRecorderHelper.getLatestRecording(this)
+            if (file == null) {
+                Toast.makeText(this, "Belum ada rekaman", Toast.LENGTH_SHORT).show()
+                return
+            }
+            val ok = AudioRecorderHelper.saveToGallery(this, file)
+            if (ok) {
+                tvRecStatus?.text = "💾 Tersimpan di galeri: ${file.name}"
+                Toast.makeText(this, "Tersimpan di Music/YadGuitar", Toast.LENGTH_LONG).show()
+                Logger.i("MainActivity", "Saved to gallery: ${file.name}")
+            } else {
+                Toast.makeText(this, "Gagal simpan ke galeri", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            Logger.e("MainActivity", "saveRecording exception", e)
+            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun tuneRecording() {
+        try {
+            val file = lastRecording ?: AudioRecorderHelper.getLatestRecording(this)
+            if (file == null) {
+                Toast.makeText(this, "Belum ada rekaman", Toast.LENGTH_SHORT).show()
+                return
+            }
+
+            tvRecStatus?.text = "🎼 Auto-tune: proses..."
+            Toast.makeText(this, "Auto-tune diproses...", Toast.LENGTH_SHORT).show()
+            Logger.i("MainActivity", "Auto-tune start: ${file.name}")
+
+            // Proses di background thread
+            Thread {
+                val outputFile = File(file.parent, "tuned_${file.nameWithoutExtension}.wav")
+                val ok = AutoTuneHelper.autoTuneFile(file, outputFile) { progress ->
+                    runOnUiThread {
+                        tvRecStatus?.text = "🎼 Auto-tune: ${(progress * 100).toInt()}%"
+                    }
+                }
+
+                runOnUiThread {
+                    if (ok && outputFile.exists()) {
+                        tvRecStatus?.text = "✅ Auto-tune selesai: ${outputFile.name}"
+                        lastRecording = outputFile
+                        Toast.makeText(this, "Auto-tune selesai", Toast.LENGTH_LONG).show()
+                        Logger.i("MainActivity", "Auto-tune complete: ${outputFile.name}")
+                    } else {
+                        tvRecStatus?.text = "❌ Auto-tune gagal"
+                        Toast.makeText(this, "Auto-tune gagal", Toast.LENGTH_LONG).show()
+                        Logger.e("MainActivity", "Auto-tune failed", null)
+                    }
+                }
+            }.start()
+        } catch (e: Exception) {
+            Logger.e("MainActivity", "tuneRecording exception", e)
+            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQ_RECORD_AUDIO) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Izin mic diberikan", Toast.LENGTH_SHORT).show()
+                Logger.i("MainActivity", "RECORD_AUDIO permission granted")
+            } else {
+                Toast.makeText(this, "Izin mic diperlukan untuk rekam", Toast.LENGTH_LONG).show()
+                Logger.w("MainActivity", "RECORD_AUDIO permission denied")
+            }
         }
     }
 
