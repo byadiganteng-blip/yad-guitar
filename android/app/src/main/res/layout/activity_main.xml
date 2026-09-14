@@ -109,6 +109,17 @@
             android:textColor="#FFFFFF"
             android:backgroundTint="#10B981"
             android:layout_marginStart="4dp" />
+
+        <Button
+            android:id="@+id/btnPattern"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:text="🎼 PATTERN"
+            android:textSize="11sp"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#F59E0B"
+            android:layout_marginStart="4dp" />
     </LinearLayout>
 
 </LinearLayout>
