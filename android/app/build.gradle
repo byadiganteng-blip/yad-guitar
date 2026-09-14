@@ -43,8 +43,6 @@ dependencies {
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.cardview:cardview:1.0.0'
-
-    // TarsosDSP untuk deteksi pitch + auto-tune
-    implementation 'be.tarsos.dsp:core:2.5'
-    implementation 'be.tarsos.dsp:jvm:2.5'
+    
+    // TarsosDSP TIDAK dipakai — AutoTuneHelper pakai algoritma internal
 }
