@@ -45,7 +45,7 @@ object Logger {
                 val baseDir = context.getExternalFilesDir(null)
                     ?: context.filesDir
                 logDir = File(baseDir, "logs")
-                if (!logDir!!.exists()) logDir!!.mkdirs()
+                logDir?.let { if (!it.exists()) it.mkdirs() }
 
                 // Buat file log hari ini
                 val today = fileNameFormat.format(Date())
@@ -64,7 +64,7 @@ object Logger {
                 logToFile("INFO", "YadGuitar", "App: YAD Guitar")
                 logToFile("INFO", "YadGuitar", "Device: ${Build.MANUFACTURER} ${Build.MODEL}")
                 logToFile("INFO", "YadGuitar", "Android: ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})")
-                logToFile("INFO", "YadGuitar", "Log dir: ${logDir!!.absolutePath}")
+                logToFile("INFO", "YadGuitar", "Log dir: ${logDir?.absolutePath ?: "null"}")
                 logToFile("INFO", "YadGuitar", "=" .repeat(60))
             } catch (e: Exception) {
                 Log.e(TAG, "Logger init failed", e)
