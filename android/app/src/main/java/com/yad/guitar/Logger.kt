@@ -234,4 +234,72 @@ object Logger {
             }
         }
     }
+
+    // ============================================================
+    // TRACKING METHODS — detail per kategori
+    // ============================================================
+    
+    /**
+     * Track UI event — tombol ditekan, activity dibuka, dll.
+     */
+    fun uiEvent(activity: String, action: String, detail: String = "") {
+        val msg = if (detail.isNotEmpty()) "UI | $activity | $action | $detail"
+                  else "UI | $activity | $action"
+        i("TRACK_UI", msg)
+    }
+    
+    /**
+     * Track audio event — petik senar, strum, dll.
+     */
+    fun audioEvent(action: String, detail: String = "") {
+        val msg = if (detail.isNotEmpty()) "AUDIO | $action | $detail"
+                  else "AUDIO | $action"
+        i("TRACK_AUDIO", msg)
+    }
+    
+    /**
+     * Track recording event — rekam, stop, play, dll.
+     */
+    fun recEvent(action: String, detail: String = "") {
+        val msg = if (detail.isNotEmpty()) "REC | $action | $detail"
+                  else "REC | $action"
+        i("TRACK_REC", msg)
+    }
+    
+    /**
+     * Track system event — lifecycle, memory, dll.
+     */
+    fun sysEvent(action: String, detail: String = "") {
+        val msg = if (detail.isNotEmpty()) "SYS | $action | $detail"
+                  else "SYS | $action"
+        i("TRACK_SYS", msg)
+    }
+    
+    /**
+     * Track error dengan context.
+     */
+    fun trackError(activity: String, action: String, e: Throwable) {
+        e("TRACK_ERR", "$activity | $action | ${e.message}", e)
+    }
+    
+    /**
+     * Track button press dengan timing.
+     */
+    fun buttonPress(activity: String, buttonName: String) {
+        i("BTN_PRESS", "$activity | $buttonName | ${System.currentTimeMillis()}")
+    }
+    
+    /**
+     * Track method entry — untuk debug flow.
+     */
+    fun methodEntry(tag: String, methodName: String) {
+        d(tag, "→ ENTER: $methodName")
+    }
+    
+    /**
+     * Track method exit — untuk debug flow.
+     */
+    fun methodExit(tag: String, methodName: String) {
+        d(tag, "← EXIT: $methodName")
+    }
 }
