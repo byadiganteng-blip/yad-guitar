@@ -15,9 +15,7 @@ import android.widget.TextView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import java.io.File
-import android.widget.Button
 import android.widget.LinearLayout
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 
