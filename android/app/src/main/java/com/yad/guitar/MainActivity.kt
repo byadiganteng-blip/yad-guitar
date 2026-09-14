@@ -496,12 +496,10 @@ class MainActivity : AppCompatActivity() {
         // Mainkan suara
         soundPool.play(stringSoundIds[index], volume, volume, 1, 0, 1.0f)
 
-        // Getar sesuai volume
+                // Getar sesuai volume
         val duration = (20 + (volume * 30)).toLong()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             // FIX: amplitude harus 1-255 (Android strict)
-            // Konversi volume (0.0-1.0) → amplitude (1-255)
-            // coerceIn memastikan minimal 1, maksimal 255
             val amplitude = (volume * 255).toInt().coerceIn(1, 255)
             vibrator.vibrate(
                 VibrationEffect.createOneShot(duration, amplitude)
