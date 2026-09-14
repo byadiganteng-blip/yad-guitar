@@ -50,6 +50,14 @@ class MainActivity : AppCompatActivity() {
     // AUTO STRUM STATE
     // ============================================================
     private val handler = Handler(Looper.getMainLooper())
+
+    // ✅ FIX: track pending strum runnables untuk cancel
+    private val strumRunnables = mutableListOf<Runnable>()
+
+    private fun cancelPendingStrums() {
+        strumRunnables.forEach { handler.removeCallbacks(it) }
+        strumRunnables.clear()
+    }
     private var isAutoStrumming = false
     private var activePatternIndex = 0
     private var currentTempoMs = 500L   // 120 BPM default
@@ -397,6 +405,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun tuneRecording() {
+        // FIX: guard isRecording & validasi file
+        if (isRecording) {
+            Toast.makeText(this, "Stop rekaman dulu sebelum auto-tune", Toast.LENGTH_SHORT).show()
+            return
+        }
         Logger.recEvent("tuneRecording", "begin")
         try {
             val file = lastRecording ?: AudioRecorderHelper.getLatestRecording(this)
@@ -404,12 +417,16 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Belum ada rekaman", Toast.LENGTH_SHORT).show()
                 return
             }
+            if (!file.exists() || file.length() < 1024) {
+                Toast.makeText(this, "File rekaman belum siap", Toast.LENGTH_SHORT).show()
+                Logger.e("MainActivity", "tuneRecording: invalid file size=${file.length()}", null)
+                return
+            }
 
             tvRecStatus?.text = "🎼 Auto-tune: proses..."
             Toast.makeText(this, "Auto-tune diproses...", Toast.LENGTH_SHORT).show()
-            Logger.i("MainActivity", "Auto-tune start: ${file.name}")
+            Logger.i("MainActivity", "Auto-tune start: ${file.name} (${file.length()} bytes)")
 
-            // Proses di background thread
             Thread {
                 val outputFile = File(file.parent, "tuned_${file.nameWithoutExtension}.wav")
                 val ok = AutoTuneHelper.autoTuneFile(file, outputFile) { progress ->
@@ -419,15 +436,15 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 runOnUiThread {
-                    if (ok && outputFile.exists()) {
+                    if (ok && outputFile.exists() && outputFile.length() > 1024) {
                         tvRecStatus?.text = "✅ Auto-tune selesai: ${outputFile.name}"
                         lastRecording = outputFile
                         Toast.makeText(this, "Auto-tune selesai", Toast.LENGTH_LONG).show()
                         Logger.i("MainActivity", "Auto-tune complete: ${outputFile.name}")
                     } else {
                         tvRecStatus?.text = "❌ Auto-tune gagal"
-                        Toast.makeText(this, "Auto-tune gagal", Toast.LENGTH_LONG).show()
-                        Logger.e("MainActivity", "Auto-tune failed", null)
+                        Toast.makeText(this, "Auto-tune gagal — cek log", Toast.LENGTH_LONG).show()
+                        Logger.e("MainActivity", "Auto-tune failed: ok=$ok exists=${outputFile.exists()}", null)
                     }
                 }
             }.start()
@@ -522,31 +539,37 @@ class MainActivity : AppCompatActivity() {
     // ============================================================
     private fun strumDown() {
         Logger.audioEvent("strumDown", "start")
-        // Strum dari bass ke treble
-        val strumDurationMs = 60L  // total durasi strum
+        cancelPendingStrums()  // FIX: cancel strum sebelumnya
+
+        val strumDurationMs = 60L
         val stepDelay = strumDurationMs / 6
 
         for (i in 0 until 6) {
-            val stringIdx = 5 - i  // 5,4,3,2,1,0
-            val volume = 0.7f + (stringIdx * 0.05f)  // bass lebih keras
-            handler.postDelayed({
+            val stringIdx = 5 - i
+            val volume = 0.7f + (stringIdx * 0.05f)
+            val r = Runnable {
                 playString(stringIdx, volume.coerceAtMost(1.0f))
-            }, i * stepDelay)
+            }
+            strumRunnables.add(r)
+            handler.postDelayed(r, i * stepDelay)
         }
     }
 
     private fun strumUp() {
         Logger.audioEvent("strumUp", "start")
-        // Strum dari treble ke bass
+        cancelPendingStrums()  // FIX: cancel strum sebelumnya
+
         val strumDurationMs = 60L
         val stepDelay = strumDurationMs / 6
 
         for (i in 0 until 6) {
-            val stringIdx = i  // 0,1,2,3,4,5
-            val volume = 0.6f + (stringIdx * 0.05f)  // bass lebih keras
-            handler.postDelayed({
+            val stringIdx = i
+            val volume = 0.6f + (stringIdx * 0.05f)
+            val r = Runnable {
                 playString(stringIdx, volume.coerceAtMost(1.0f))
-            }, i * stepDelay)
+            }
+            strumRunnables.add(r)
+            handler.postDelayed(r, i * stepDelay)
         }
     }
 
