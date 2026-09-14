@@ -43,14 +43,93 @@
             android:background="#2A2A4E" />
     </LinearLayout>
 
-    <!-- FRETBOARD (custom view) -->
+    <!-- FRETBOARD -->
     <com.yad.guitar.GuitarView
         android:id="@+id/guitarView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp" />
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp" />
+
+    <!-- RECORDING CONTROLS -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#0A0A14"
+        android:padding="6dp">
+
+        <Button
+            android:id="@+id/btnRecord"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="🎙️ REC"
+            android:textSize="11sp"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#EF4444"
+            android:layout_marginEnd="3dp" />
+
+        <Button
+            android:id="@+id/btnStop"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="⏹️ STOP"
+            android:textSize="11sp"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#64748B"
+            android:layout_marginStart="3dp"
+            android:layout_marginEnd="3dp" />
+
+        <Button
+            android:id="@+id/btnPlayRec"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="▶️ PLAY"
+            android:textSize="11sp"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#10B981"
+            android:layout_marginStart="3dp"
+            android:layout_marginEnd="3dp" />
+
+        <Button
+            android:id="@+id/btnSave"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="💾 SAVE"
+            android:textSize="11sp"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#3B82F6"
+            android:layout_marginStart="3dp"
+            android:layout_marginEnd="3dp" />
+
+        <Button
+            android:id="@+id/btnAutoTune"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="🎼 TUNE"
+            android:textSize="11sp"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#F59E0B"
+            android:layout_marginStart="3dp" />
+    </LinearLayout>
+
+    <!-- RECORDING STATUS -->
+    <TextView
+        android:id="@+id/tvRecStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Tekan REC untuk merekam"
+        android:textSize="11sp"
+        android:textColor="#94A3B8"
+        android:gravity="center"
+        android:padding="4dp"
+        android:background="#0A0A14" />
 
     <!-- CHORD BUTTONS -->
     <HorizontalScrollView
@@ -58,8 +137,8 @@
         android:layout_height="wrap_content"
         android:scrollbars="none"
         android:background="#0A0A14"
-        android:paddingTop="6dp"
-        android:paddingBottom="6dp">
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp">
 
         <LinearLayout
             android:id="@+id/chordContainer"
@@ -80,46 +159,48 @@
         <Button
             android:id="@+id/btnStrumDown"
             android:layout_width="0dp"
-            android:layout_height="56dp"
+            android:layout_height="52dp"
             android:layout_weight="1"
             android:text="⬇️ STRUM"
-            android:textSize="12sp"
+            android:textSize="11sp"
             android:textColor="#FFFFFF"
             android:backgroundTint="#8B5CF6"
-            android:layout_marginEnd="4dp" />
+            android:layout_marginEnd="3dp" />
 
         <Button
             android:id="@+id/btnStrumUp"
             android:layout_width="0dp"
-            android:layout_height="56dp"
+            android:layout_height="52dp"
             android:layout_weight="1"
             android:text="⬆️ UP"
-            android:textSize="12sp"
+            android:textSize="11sp"
             android:textColor="#FFFFFF"
             android:backgroundTint="#EC4899"
-            android:layout_marginStart="4dp" />
+            android:layout_marginStart="3dp"
+            android:layout_marginEnd="3dp" />
 
         <Button
             android:id="@+id/btnAutoStrum"
             android:layout_width="0dp"
-            android:layout_height="56dp"
+            android:layout_height="52dp"
             android:layout_weight="1"
             android:text="🎵 AUTO"
-            android:textSize="12sp"
+            android:textSize="11sp"
             android:textColor="#FFFFFF"
             android:backgroundTint="#10B981"
-            android:layout_marginStart="4dp" />
+            android:layout_marginStart="3dp"
+            android:layout_marginEnd="3dp" />
 
         <Button
             android:id="@+id/btnPattern"
             android:layout_width="0dp"
-            android:layout_height="56dp"
+            android:layout_height="52dp"
             android:layout_weight="1"
             android:text="🎼 PATTERN"
             android:textSize="11sp"
             android:textColor="#FFFFFF"
             android:backgroundTint="#F59E0B"
-            android:layout_marginStart="4dp" />
+            android:layout_marginStart="3dp" />
     </LinearLayout>
 
 </LinearLayout>
