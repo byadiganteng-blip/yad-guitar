@@ -13,6 +13,7 @@ import java.io.FileInputStream
 
 /**
  * AudioRecorderHelper — rekam suara, putar, simpan ke galeri.
+ * FIX v2: null-safe dir, robust stop, return file walau stop() gagal.
  */
 object AudioRecorderHelper {
 
@@ -21,17 +22,19 @@ object AudioRecorderHelper {
     private var player: MediaPlayer? = null
     private var outputFile: File? = null
 
-    /**
-     * Mulai rekam. Return: file output, atau null kalau gagal.
-     */
+    private fun getRecordingsDir(context: Context): File {
+        val base = context.getExternalFilesDir(null) ?: context.filesDir
+        val dir = File(base, "recordings")
+        if (!dir.exists()) dir.mkdirs()
+        return dir
+    }
+
     fun startRecording(context: Context): File? {
         stopRecording()
         stopPlayback()
 
         try {
-            val dir = File(context.getExternalFilesDir(null), "recordings")
-            if (!dir.exists()) dir.mkdirs()
-
+            val dir = getRecordingsDir(context)
             val file = File(dir, "rec_${System.currentTimeMillis()}.m4a")
             outputFile = file
 
@@ -62,34 +65,32 @@ object AudioRecorderHelper {
         }
     }
 
-    /**
-     * Stop rekam. Return: file hasil, atau null kalau tidak ada.
-     */
     fun stopRecording(): File? {
         val file = outputFile
         try {
             recorder?.apply {
-                stop()
+                try { stop() } catch (e: Exception) {
+                    Log.w(TAG, "stop() failed, file may be partial", e)
+                }
                 release()
             }
-            recorder = null
-            outputFile = null
-            Log.d(TAG, "Recording stopped: ${file?.absolutePath}")
-            return file
         } catch (e: Exception) {
             Log.e(TAG, "stopRecording error", e)
-            recorder?.release()
+        } finally {
             recorder = null
             outputFile = null
-            return null
         }
+
+        // FIX: return file walau stop() gagal, selama file ada & tidak kosong
+        if (file != null && file.exists() && file.length() > 0) {
+            Log.d(TAG, "Recording stopped: ${file.absolutePath} (${file.length()} bytes)")
+            return file
+        }
+        return null
     }
 
     fun isRecording(): Boolean = recorder != null
 
-    /**
-     * Putar file audio.
-     */
     fun play(file: File, onComplete: () -> Unit = {}) {
         stopPlayback()
         try {
@@ -129,9 +130,6 @@ object AudioRecorderHelper {
         player?.isPlaying == true
     } catch (_: Exception) { false }
 
-    /**
-     * Simpan file ke galeri (MediaStore).
-     */
     fun saveToGallery(context: Context, file: File): Boolean {
         return try {
             val values = ContentValues().apply {
@@ -160,11 +158,8 @@ object AudioRecorderHelper {
         }
     }
 
-    /**
-     * Get list recording files.
-     */
     fun listRecordings(context: Context): List<File> {
-        val dir = File(context.getExternalFilesDir(null), "recordings")
+        val dir = getRecordingsDir(context)
         if (!dir.exists()) return emptyList()
         return dir.listFiles()
             ?.filter { it.extension == "m4a" }
