@@ -1,0 +1,65 @@
+name: Build Guitar APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: 12266719
+          accept-android-sdk-licenses: true
+          log-accepted-android-sdk-licenses: true
+          packages: tools platform-tools
+
+      - uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: 8.2
+          build-root-directory: android
+
+      - name: Ensure wrapper
+        working-directory: android
+        run: |
+          if [ ! -f gradlew ]; then
+            gradle wrapper --gradle-version 8.2 --distribution-type bin
+          fi
+          chmod +x gradlew
+
+      - name: Verify resources
+        run: |
+          echo "=== Raw resources ==="
+          ls -lh android/app/src/main/res/raw/ || echo "no raw folder"
+
+      - name: Build Debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Build Release APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: guitar-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          retention-days: 30
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: guitar-release-apk
+          path: android/app/build/outputs/apk/release/*.apk
+          retention-days: 30
