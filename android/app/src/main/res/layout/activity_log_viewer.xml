@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#0A0A14"
+    android:padding="12dp">
+
+    <!-- HEADER -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="📋 Log Viewer"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        android:paddingBottom="4dp" />
+
+    <!-- INFO -->
+    <TextView
+        android:id="@+id/tvInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="11sp"
+        android:textColor="#94A3B8"
+        android:fontFamily="monospace"
+        android:paddingBottom="8dp" />
+
+    <!-- LOG CONTENT -->
+    <ScrollView
+        android:id="@+id/scrollLog"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="#1A1A2E"
+        android:padding="8dp">
+
+        <HorizontalScrollView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:scrollbars="horizontal">
+
+            <TextView
+                android:id="@+id/tvLog"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="(memuat log...)"
+                android:textSize="10sp"
+                android:textColor="#E2E8F0"
+                android:fontFamily="monospace"
+                android:lineSpacingExtra="2dp" />
+        </HorizontalScrollView>
+    </ScrollView>
+
+    <!-- BUTTONS -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingTop="8dp">
+
+        <Button
+            android:id="@+id/btnRefresh"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="🔄 REFRESH"
+            android:textSize="10sp"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#3B82F6"
+            android:layout_marginEnd="3dp" />
+
+        <Button
+            android:id="@+id/btnShare"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="📤 SHARE"
+            android:textSize="10sp"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#10B981"
+            android:layout_marginStart="3dp"
+            android:layout_marginEnd="3dp" />
+
+        <Button
+            android:id="@+id/btnClear"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="🗑️ CLEAR"
+            android:textSize="10sp"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#EF4444"
+            android:layout_marginStart="3dp"
+            android:layout_marginEnd="3dp" />
+
+        <Button
+            android:id="@+id/btnClose"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="❌ TUTUP"
+            android:textSize="10sp"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#64748B"
+            android:layout_marginStart="3dp" />
+    </LinearLayout>
+
+</LinearLayout>
