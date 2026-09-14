@@ -239,19 +239,55 @@ class MainActivity : AppCompatActivity() {
         }
 
         findViewById<Button>(R.id.btnStop).setOnClickListener {
-            stopRecording()
+            Logger.buttonPress("MainActivity", "btnStop")
+            Logger.methodEntry("MainActivity", "stopRecording")
+            try {
+                stopRecording()
+            } catch (e: Exception) {
+                Logger.trackError("MainActivity", "btnStop", e)
+                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+            } finally {
+                Logger.methodExit("MainActivity", "stopRecording")
+            }
         }
 
         findViewById<Button>(R.id.btnPlayRec).setOnClickListener {
-            playRecording()
+            Logger.buttonPress("MainActivity", "btnPlayRec")
+            Logger.methodEntry("MainActivity", "playRecording")
+            try {
+                playRecording()
+            } catch (e: Exception) {
+                Logger.trackError("MainActivity", "btnPlayRec", e)
+                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+            } finally {
+                Logger.methodExit("MainActivity", "playRecording")
+            }
         }
 
         findViewById<Button>(R.id.btnSave).setOnClickListener {
-            saveRecording()
+            Logger.buttonPress("MainActivity", "btnSave")
+            Logger.methodEntry("MainActivity", "saveRecording")
+            try {
+                saveRecording()
+            } catch (e: Exception) {
+                Logger.trackError("MainActivity", "btnSave", e)
+                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+            } finally {
+                Logger.methodExit("MainActivity", "saveRecording")
+            }
         }
 
         findViewById<Button>(R.id.btnAutoTune).setOnClickListener {
-            tuneRecording()
+            Logger.buttonPress("MainActivity", "btnAutoTune")
+            Logger.methodEntry("MainActivity", "tuneRecording")
+            try {
+                tuneRecording()
+            } catch (e: Exception) {
+                Logger.trackError("MainActivity", "btnAutoTune", e)
+                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+            } finally {
+                Logger.methodExit("MainActivity", "tuneRecording")
+            }
         }
     }
 
