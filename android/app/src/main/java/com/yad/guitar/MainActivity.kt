@@ -153,7 +153,7 @@ class MainActivity : AppCompatActivity() {
     // ============================================================
     private val handler = Handler(Looper.getMainLooper())
     private var isAutoStrumming = false
-    private var currentPattern = 0
+    private var activePatternIndex = 0
     private var currentTempoMs = 500L   // 120 BPM default
     private var patternStep = 0
 
@@ -163,99 +163,102 @@ class MainActivity : AppCompatActivity() {
     // stringIdx: 0-5 (0 = senar 6/bass, 5 = senar 1/treble)
     // volume: 0.0-1.0 (dinamika)
     // ============================================================
-    private val patterns = listOf(
-        // Pattern 1: Down-Up sederhana (dasar)
-        Pattern("Basic Down-Up", 500L, listOf(
-            Stroke(5, 0, 1.0f), Stroke(4, 0, 0.9f), Stroke(3, 0, 0.8f),
-            Stroke(2, 0, 0.8f), Stroke(1, 0, 0.9f), Stroke(0, 0, 1.0f),
-            Stroke(0, 250, 0.7f), Stroke(1, 250, 0.7f), Stroke(2, 250, 0.7f),
-            Stroke(3, 250, 0.7f), Stroke(4, 250, 0.7f), Stroke(5, 250, 0.7f),
-        )),
+    // ============================================================
+    //  PATTERNS — pakai dari StrummingPattern.kt
+    // ============================================================
+    private val patterns = StrummingPattern.ALL_PATTERNS
 
-        // Pattern 2: D-DU-UDU (paling umum)
-        Pattern("D-DU-UDU", 500L, listOf(
-            Stroke(5, 0, 1.0f), Stroke(4, 0, 0.9f), Stroke(3, 0, 0.85f),
-            Stroke(2, 0, 0.85f), Stroke(1, 0, 0.9f), Stroke(0, 0, 1.0f),
+    // Index pattern aktif
+    private var activePatternIndex = 0
 
-            Stroke(5, 125, 0.6f), Stroke(4, 125, 0.6f),
-            Stroke(5, 250, 0.9f), Stroke(4, 250, 0.85f), Stroke(3, 250, 0.8f),
-            Stroke(2, 250, 0.8f), Stroke(1, 250, 0.85f), Stroke(0, 250, 0.9f),
+    /**
+     * Ganti pattern ke berikutnya.
+     */
+    private fun nextPattern() {
+        activePatternIndex = (activePatternIndex + 1) % patterns.size
+        val pattern = patterns[activePatternIndex]
+        Toast.makeText(
+            this,
+            "🎸 ${pattern.name}\n${pattern.description}",
+            Toast.LENGTH_SHORT
+        ).show()
+        Logger.i("MainActivity", "Pattern changed: ${pattern.name} (index $activePatternIndex)")
+    }
 
-            Stroke(0, 375, 0.5f), Stroke(1, 375, 0.5f), Stroke(2, 375, 0.5f),
-            Stroke(3, 375, 0.5f), Stroke(4, 375, 0.5f), Stroke(5, 375, 0.5f),
+    /**
+     * Mainkan pattern wikiHow.
+     */
+    private fun playWikiPattern() {
+        if (!isAutoStrumming) return
+        if (activePatternIndex >= patterns.size) return
 
-            Stroke(5, 500, 0.9f), Stroke(4, 500, 0.85f), Stroke(3, 500, 0.8f),
-            Stroke(2, 500, 0.8f), Stroke(1, 500, 0.85f), Stroke(0, 500, 0.9f),
-        )),
+        val pattern = patterns[activePatternIndex]
+        val bpm = pattern.bpm
+        val beatMs = 60000L / bpm
 
-        // Pattern 3: Bass + Arpeggio (fingerstyle)
-        Pattern("Bass Arpeggio", 600L, listOf(
-            Stroke(5, 0, 1.0f),       // Petik bass dulu
-            Stroke(3, 150, 0.8f),
-            Stroke(2, 300, 0.7f),
-            Stroke(1, 450, 0.8f),
-            Stroke(2, 600, 0.7f),
-            Stroke(3, 750, 0.8f),
-            Stroke(4, 900, 0.7f),
-            Stroke(3, 1050, 0.75f),
-            Stroke(2, 1200, 0.8f),
-        )),
+        for (stroke in pattern.strokes) {
+            val delay = (stroke.beat * beatMs).toLong()
 
-        // Pattern 4: Folk strum (campuran)
-        Pattern("Folk Strum", 550L, listOf(
-            Stroke(5, 0, 1.0f), Stroke(4, 0, 0.95f), Stroke(3, 0, 0.9f),
-            Stroke(2, 0, 0.9f), Stroke(1, 0, 0.95f), Stroke(0, 0, 1.0f),
+            handler.postDelayed({
+                if (!isAutoStrumming) return@postDelayed
 
-            Stroke(0, 275, 0.6f), Stroke(1, 275, 0.55f),
+                val chord = currentChord
+                if (chord == null) return@postDelayed
 
-            Stroke(2, 550, 0.9f), Stroke(3, 550, 0.85f), Stroke(4, 550, 0.85f),
-            Stroke(5, 550, 0.9f),
+                when (stroke.type) {
+                    StrummingPattern.StrokeType.DOWN -> {
+                        for (i in 0 until 6) {
+                            if (chord.frets[i] == -1) continue
+                            val vol = stroke.volume * (if (i < 3) 1.0f else 0.85f)
+                            val finalI = i
+                            handler.postDelayed({
+                                if (isAutoStrumming) playString(finalI, vol)
+                            }, (i * 15).toLong())
+                        }
+                    }
+                    StrummingPattern.StrokeType.UP -> {
+                        for (i in 5 downTo 0) {
+                            if (chord.frets[i] == -1) continue
+                            val vol = stroke.volume * (if (i < 3) 1.0f else 0.85f)
+                            val finalI = i
+                            handler.postDelayed({
+                                if (isAutoStrumming) playString(finalI, vol)
+                            }, ((5 - i) * 15).toLong())
+                        }
+                    }
+                    StrummingPattern.StrokeType.DOWN_MUTED -> {
+                        for (i in 0 until 6) {
+                            if (chord.frets[i] == -1) continue
+                            val vol = stroke.volume * 0.4f
+                            val finalI = i
+                            handler.postDelayed({
+                                if (isAutoStrumming) playString(finalI, vol)
+                            }, (i * 15).toLong())
+                        }
+                    }
+                    StrummingPattern.StrokeType.UP_MUTED -> {
+                        for (i in 5 downTo 0) {
+                            if (chord.frets[i] == -1) continue
+                            val vol = stroke.volume * 0.4f
+                            val finalI = i
+                            handler.postDelayed({
+                                if (isAutoStrumming) playString(finalI, vol)
+                            }, ((5 - i) * 15).toLong())
+                        }
+                    }
+                    StrummingPattern.StrokeType.REST -> {
+                        // Diam
+                    }
+                }
+            }, delay)
+        }
 
-            Stroke(5, 825, 0.5f), Stroke(4, 825, 0.5f),
-            Stroke(3, 825, 0.5f), Stroke(2, 825, 0.5f),
-
-            Stroke(1, 1100, 0.85f), Stroke(2, 1100, 0.8f), Stroke(3, 1100, 0.8f),
-            Stroke(4, 1100, 0.85f), Stroke(5, 1100, 0.9f),
-        )),
-
-        // Pattern 5: Reggae / Ska (aksen di off-beat)
-        Pattern("Reggae Ska", 450L, listOf(
-            // Diam di beat 1
-            Stroke(0, 225, 0.4f), Stroke(1, 225, 0.4f), Stroke(2, 225, 0.5f),
-            Stroke(3, 225, 0.5f), Stroke(4, 225, 0.4f), Stroke(5, 225, 0.4f),
-
-            Stroke(5, 450, 1.0f), Stroke(4, 450, 0.95f), Stroke(3, 450, 0.9f),
-            Stroke(2, 450, 0.9f), Stroke(1, 450, 0.95f), Stroke(0, 450, 1.0f),
-
-            Stroke(0, 675, 0.5f), Stroke(1, 675, 0.5f),
-            Stroke(2, 675, 0.5f), Stroke(3, 675, 0.5f),
-
-            Stroke(5, 900, 1.0f), Stroke(4, 900, 0.95f), Stroke(3, 900, 0.9f),
-            Stroke(2, 900, 0.9f), Stroke(1, 900, 0.95f), Stroke(0, 900, 1.0f),
-        )),
-
-        // Pattern 6: Ballad (lambat, penuh perasaan)
-        Pattern("Ballad", 800L, listOf(
-            Stroke(5, 0, 1.0f),
-            Stroke(4, 200, 0.8f),
-            Stroke(3, 400, 0.75f),
-            Stroke(2, 600, 0.75f),
-            Stroke(1, 800, 0.8f),
-            Stroke(2, 1000, 0.75f),
-            Stroke(3, 1200, 0.75f),
-            Stroke(4, 1400, 0.8f),
-            Stroke(5, 1600, 0.9f),
-        )),
-
-        // Pattern 7: Metal / Power chord (cepat, agresif)
-        Pattern("Metal Power", 350L, listOf(
-            Stroke(5, 0, 1.0f), Stroke(4, 0, 0.9f),
-            Stroke(5, 175, 0.9f), Stroke(4, 175, 0.85f),
-            Stroke(5, 350, 1.0f), Stroke(4, 350, 0.9f),
-            Stroke(5, 525, 0.9f), Stroke(4, 525, 0.85f),
-            Stroke(5, 700, 1.0f), Stroke(4, 700, 0.9f),
-        )),
-    )
+        // Ulang pattern
+        val patternDuration = (pattern.beatsPerBar * beatMs).toLong() + 100L
+        handler.postDelayed({
+            if (isAutoStrumming) playWikiPattern()
+        }, patternDuration)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -303,10 +306,10 @@ class MainActivity : AppCompatActivity() {
 
         // Tap chord info untuk ganti pattern
         tvChordInfo.setOnClickListener {
-            currentPattern = (currentPattern + 1) % patterns.size
+            activePatternIndex = (activePatternIndex + 1) % patterns.size
             Toast.makeText(
                 this,
-                "Pattern: ${patterns[currentPattern].name}",
+                "Pattern: ${patterns[activePatternIndex].name}",
                 Toast.LENGTH_SHORT
             ).show()
         }
@@ -665,7 +668,7 @@ class MainActivity : AppCompatActivity() {
             playPattern()
             Toast.makeText(
                 this,
-                "Pattern: ${patterns[currentPattern].name}",
+                "Pattern: ${patterns[activePatternIndex].name}",
                 Toast.LENGTH_SHORT
             ).show()
         } else {
@@ -676,34 +679,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun playPattern() {
-        if (!isAutoStrumming) return
 
-        val pattern = patterns[currentPattern]
-        val strokes = pattern.strokes
-
-        // Schedule semua stroke
-        handler.postDelayed({
-            if (!isAutoStrumming) return@postDelayed
-
-            for (stroke in strokes) {
-                handler.postDelayed({
-                    if (isAutoStrumming) {
-                        playString(stroke.stringIdx, stroke.volume)
-                    }
-                }, stroke.delayMs)
-            }
-
-            // Ulang setelah pattern selesai
-            val patternDuration = strokes.maxOfOrNull { it.delayMs } ?: 500L
-            handler.postDelayed({
-                if (isAutoStrumming) {
-                    playPattern()
-                }
-            }, patternDuration + 100L)  // +100ms jeda antar pattern
-
-        }, 0)
-    }
 
     // ============================================================
     // CHORD SETUP
