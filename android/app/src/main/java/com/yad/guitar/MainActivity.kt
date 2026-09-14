@@ -21,6 +21,111 @@ import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
 
+    // ============================================================
+    //  STRUMMING PATTERN dari wikiHow
+    // ============================================================
+    private var currentWikiPattern: StrummingPattern.Pattern? = null
+    private var currentPatternIndex = 0
+
+    /**
+     * Ganti pattern sesuai wikiHow.
+     */
+    private fun nextWikiPattern() {
+        currentPatternIndex = (currentPatternIndex + 1) % StrummingPattern.ALL_PATTERNS.size
+        currentWikiPattern = StrummingPattern.ALL_PATTERNS[currentPatternIndex]
+        Toast.makeText(
+            this,
+            "Pattern: ${currentWikiPattern?.name}\n${currentWikiPattern?.description}",
+            Toast.LENGTH_SHORT
+        ).show()
+        Logger.i("MainActivity", "Wiki pattern changed: ${currentWikiPattern?.name}")
+    }
+
+    /**
+     * Mainkan pattern wikiHow (versi update).
+     */
+    private fun playWikiPattern() {
+        val pattern = currentWikiPattern ?: return
+        if (!isAutoStrumming) return
+
+        val bpm = pattern.bpm
+        val beatMs = 60000L / bpm
+        val noteMs = (beatMs * pattern.noteType.beatsPerNote).toLong()
+
+        for (stroke in pattern.strokes) {
+            val delay = (stroke.beat * beatMs).toLong()
+            
+            handler.postDelayed({
+                if (!isAutoStrumming) return@postDelayed
+                
+                when (stroke.type) {
+                    StrummingPattern.StrokeType.DOWN -> {
+                        // Strum dari bass ke treble
+                        val chord = currentChord
+                        for (i in 0 until 6) {
+                            val fret = chord?.frets?.get(i) ?: 0
+                            if (fret == -1) continue
+                            val vol = stroke.volume * (if (i < 3) 1.0f else 0.9f)
+                            val finalI = i
+                            handler.postDelayed({
+                                if (isAutoStrumming) playString(finalI, vol)
+                            }, (i * 15).toLong())
+                        }
+                    }
+                    StrummingPattern.StrokeType.UP -> {
+                        // Strum dari treble ke bass
+                        val chord = currentChord
+                        for (i in 5 downTo 0) {
+                            val fret = chord?.frets?.get(i) ?: 0
+                            if (fret == -1) continue
+                            val vol = stroke.volume * (if (i < 3) 1.0f else 0.9f)
+                            val finalI = i
+                            handler.postDelayed({
+                                if (isAutoStrumming) playString(finalI, vol)
+                            }, ((5 - i) * 15).toLong())
+                        }
+                    }
+                    StrummingPattern.StrokeType.DOWN_MUTED -> {
+                        // Strum dengan volume rendah (palm-mute effect)
+                        val chord = currentChord
+                        for (i in 0 until 6) {
+                            val fret = chord?.frets?.get(i) ?: 0
+                            if (fret == -1) continue
+                            val vol = stroke.volume * 0.4f  // volume rendah = palm-mute
+                            val finalI = i
+                            handler.postDelayed({
+                                if (isAutoStrumming) playString(finalI, vol)
+                            }, (i * 15).toLong())
+                        }
+                    }
+                    StrummingPattern.StrokeType.UP_MUTED -> {
+                        val chord = currentChord
+                        for (i in 5 downTo 0) {
+                            val fret = chord?.frets?.get(i) ?: 0
+                            if (fret == -1) continue
+                            val vol = stroke.volume * 0.4f
+                            val finalI = i
+                            handler.postDelayed({
+                                if (isAutoStrumming) playString(finalI, vol)
+                            }, ((5 - i) * 15).toLong())
+                        }
+                    }
+                    StrummingPattern.StrokeType.REST -> {
+                        // Diam, tidak mainkan apa-apa
+                    }
+                }
+            }, delay)
+        }
+
+        // Ulang pattern
+        val patternDuration = (pattern.beatsPerBar * beatMs).toLong() + 100L
+        handler.postDelayed({
+            if (isAutoStrumming) playWikiPattern()
+        }, patternDuration)
+    }
+
+
+
     companion object {
         private const val REQ_RECORD_AUDIO = 1001
     }
